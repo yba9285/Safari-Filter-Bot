@@ -40,8 +40,8 @@ REFFER_POINT = int(environ.get('USER_POINT', "50")) # Set Referel point Count
 premium = environ.get('PREMIUM_LOGS', '-1002585601614')
 PREMIUM_LOGS = int(premium) if premium and id_pattern.search(premium) else None
 # lock file, set file limit 
-FILE_LIMITE = int(environ.get('FILE_LIMITE', 15))
-SEND_ALL_LIMITE = int(environ.get('SEND_ALL_LIMITE', 3))
+FILE_LIMITE = int(environ.get('FILE_LIMITE', 25))
+SEND_ALL_LIMITE = int(environ.get('SEND_ALL_LIMITE', 5))
 LIMIT_MODE = is_enabled((environ.get('LIMIT_MODE', 'True')), False)
 
 # Admins, Channels & Users
@@ -78,11 +78,11 @@ VERIFY_API2 = (environ.get('VERIFY_API2', 'f565edfbea9e9a7e0ca7a758bbb580bf614d4
  
 THIRD_VERIFY_GAP = int(environ.get('THIRD_VERIFY_GAP', "1800"))
 VERIFY_URL3 = environ.get('VERIFY_URL3', 'papajiurl.com')
-VERIFY_API3 = (environ.get('VERIFY_API3', '04d39f6f93164655a957b4ffd397defff9183148'))
+VERIFY_API3 = (environ.get('VERIFY_API3', '41ff6d51799b604c63f6cfe75eb5b7a58794a850'))
  
 TUTORIAL = environ.get('TUTORIAL', 'https://t.me/howtoopenlinks/21')
 TUTORIAL2 = environ.get('TUTORIAL2', 'https://t.me/howtoopennlinks/25')
-TUTORIAL3 = environ.get('TUTORIAL3', 'https://t.me/how_to_open_modijilink/2')
+TUTORIAL3 = environ.get('TUTORIAL3', 'https://t.me/howtoopennlinks/19')
 
 # auto files delete
 AUTO_FILE_DELETE = is_enabled((environ.get('AUTO_FILE_DELETE', "True")), False)
