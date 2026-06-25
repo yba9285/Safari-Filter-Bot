@@ -459,6 +459,29 @@ async def language_check(bot, query):
                 await query.answer()
 
         else:
+           suggestions = await get_similar_movies(movie)
+
+           if suggestions:
+
+             btn = []
+
+           for name in suggestions[:10]:
+             btn.append([
+              InlineKeyboardButton(
+                 text=name[:60],
+                 switch_inline_query_current_chat=name
+             )
+          ])
+
+        try:
+            await query.message.reply_text(
+                f"❌ No files found for:\n\n{movie}\n\n🎯 Did you mean:",
+                reply_markup=InlineKeyboardMarkup(btn)
+            )
+        except Exception as e:
+            logger.error(f"Suggestion message error: {e}")
+
+        return
             # user ko alert + admin ko request
             await query.answer(
                 f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {movie}.",
