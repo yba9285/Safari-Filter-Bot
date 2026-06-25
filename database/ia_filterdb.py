@@ -43,7 +43,7 @@ class Media(Document):
                 'name': 'file_name_text'
             }
         )
-        collection_name = COLLECTION_NAME('$file_name', )
+        collection_name = COLLECTION_NAME
 
 
 async def save_file(media):
