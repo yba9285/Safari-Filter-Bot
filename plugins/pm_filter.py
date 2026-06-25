@@ -22,7 +22,7 @@ from pyrogram.errors import FloodWait, UserIsBlocked, MessageNotModified, PeerId
 from utils import get_size, is_subscribed, get_poster, temp, get_settings, save_group_settings, get_shortlink, stream_site, get_text, imdb, ai_fix_query
 from database.users_chats_db import db
 from database.safari_reffer import sdb
-from database.ia_filterdb import Media, get_file_details, get_search_results, get_bad_files
+from database.ia_filterdb import Media, get_file_details, get_search_results, get_bad_files, get_similar_movies
 
 from fuzzywuzzy import process
 TIMEZONE = "Asia/Kolkata"
