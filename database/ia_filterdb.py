@@ -150,33 +150,15 @@ async def get_all_files():
 
 async def get_similar_movies(query, limit=10):
     try:
-        cursor = Media.find(
-            {
-                "$text": {
-                    "$search": query
-                }
-            },
-            {
-                "score": {
-                    "$meta": "textScore"
-                }
-            }
-        )
+        all_files = await get_all_files()
 
-        candidates = await cursor.to_list(length=50)
-
-        if not candidates:
+        if not all_files:
             return []
 
-        titles = []
+        cleaned_titles = []
         seen = set()
 
-        for movie in candidates:
-
-            title = movie.get("file_name", "")
-
-            if not title:
-                continue
+        for title in all_files:
 
             title = re.sub(
                 r'(?i)(480p|720p|1080p|2160p|4k|hdrip|webrip|web-dl|bluray|x264|x265|hevc|hq)',
@@ -191,18 +173,18 @@ async def get_similar_movies(query, limit=10):
 
             if key not in seen:
                 seen.add(key)
-                titles.append(title)
+                cleaned_titles.append(title)
 
         matches = process.extract(
             query,
-            titles,
+            cleaned_titles,
             limit=limit
         )
 
         return [
             title
             for title, score in matches
-            if score >= 65
+            if score >= 55
         ]
 
     except Exception as e:
