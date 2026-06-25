@@ -142,6 +142,67 @@ async def get_all_files():
     all_files = await cursor.to_list(length=10000)  
     return [file['file_name'] for file in all_files]
 
+async def get_similar_movies(query, limit=10):
+    try:
+        cursor = Media.find(
+            {
+                "$text": {
+                    "$search": query
+                }
+            },
+            {
+                "score": {
+                    "$meta": "textScore"
+                }
+            }
+        )
+
+        candidates = await cursor.to_list(length=50)
+
+        if not candidates:
+            return []
+
+        titles = []
+        seen = set()
+
+        for movie in candidates:
+
+            title = movie.get("file_name", "")
+
+            if not title:
+                continue
+
+            title = re.sub(
+                r'(?i)(480p|720p|1080p|2160p|4k|hdrip|webrip|web-dl|bluray|x264|x265|hevc|hq)',
+                '',
+                title
+            )
+
+            title = re.sub(r'[\[\]\(\)_\-\.\|]', ' ', title)
+            title = " ".join(title.split())
+
+            key = title.lower()
+
+            if key not in seen:
+                seen.add(key)
+                titles.append(title)
+
+        matches = process.extract(
+            query,
+            titles,
+            limit=limit
+        )
+
+        return [
+            title
+            for title, score in matches
+            if score >= 65
+        ]
+
+    except Exception as e:
+        logger.error(f"Suggestion error: {e}")
+        return []
+
 async def get_bad_files(query, file_type=None, filter=False):
     """For given query return (results, next_offset)"""
     query = query.strip()
