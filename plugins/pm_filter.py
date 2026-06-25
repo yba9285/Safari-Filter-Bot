@@ -461,6 +461,9 @@ async def language_check(bot, query):
         else:
             suggestions = await get_similar_movies(movie)
 
+            logger.info(f"Movie: {movie}")
+            logger.info(f"Suggestions: {suggestions}")
+           
             if suggestions:
 
                 btn = []
