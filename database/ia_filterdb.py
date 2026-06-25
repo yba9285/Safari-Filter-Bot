@@ -11,7 +11,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from marshmallow.exceptions import ValidationError
 from info import DATABASE_URI, DATABASE_NAME, COLLECTION_NAME, USE_CAPTION_FILTER, MAX_B_TN
 from utils import get_settings, save_group_settings
-from fuzzywuzzy import process
+from fuzzywuzzy import process, fuzz
 from Script import script
 
 # Set up logging
@@ -150,15 +150,26 @@ async def get_all_files():
 
 async def get_similar_movies(query, limit=10):
     try:
-        all_files = await get_all_files()
+        words = query.split()
 
-        if not all_files:
+        regex_filter = {
+            "$or": [
+                {"file_name": {"$regex": word, "$options": "i"}}
+                for word in words
+            ]
+        }
+
+        cursor = Media.find(regex_filter)
+        candidates = await cursor.to_list(length=500)
+
+        if not candidates:
             return []
 
-        cleaned_titles = []
+        titles = []
         seen = set()
 
-        for title in all_files:
+        for movie in candidates:
+            title = movie.get("file_name", "")
 
             title = re.sub(
                 r'(?i)(480p|720p|1080p|2160p|4k|hdrip|webrip|web-dl|bluray|x264|x265|hevc|hq)',
@@ -169,23 +180,18 @@ async def get_similar_movies(query, limit=10):
             title = re.sub(r'[\[\]\(\)_\-\.\|]', ' ', title)
             title = " ".join(title.split())
 
-            key = title.lower()
-
-            if key not in seen:
-                seen.add(key)
-                cleaned_titles.append(title)
+            if title.lower() not in seen:
+                seen.add(title.lower())
+                titles.append(title)
 
         matches = process.extract(
             query,
-            cleaned_titles,
+            titles,
+            scorer=fuzz.token_sort_ratio,
             limit=limit
         )
 
-        return [
-            title
-            for title, score in matches
-            if score >= 55
-        ]
+        return [title for title, score in matches if score >= 40]
 
     except Exception as e:
         logger.error(f"Suggestion error: {e}")
