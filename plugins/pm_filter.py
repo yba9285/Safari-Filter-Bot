@@ -483,20 +483,20 @@ async def language_check(bot, query):
 
                 return
 
-              # user ko alert + admin ko request
-              await query.answer(
-                  f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ǫᴜᴇʀʏ {movie}.",
-                  show_alert=True
-              )
+            # user ko alert + admin ko request
+            await query.answer(
+                f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ǫᴜᴇʀʏ {movie}.",
+                show_alert=True
+            )
 
-              try:
-                  await bot.send_message(
-                      REQ_CHANNEL,
-                      f"📝 #REQUESTED_CONTENT 📝\n\n"
-                      f"ʙᴏᴛ - {temp.B_NAME}\n"
-                      f"ɴᴀᴍᴇ - {query.from_user.mention} (<code>{query.from_user.id}</code>)\n"
-                      f"Rᴇǫᴜᴇsᴛ - <code>{movie}</code>"
-                  )
+            try:
+                await bot.send_message(
+                    REQ_CHANNEL,
+                    f"📝 #REQUESTED_CONTENT 📝\n\n"
+                    f"ʙᴏᴛ - {temp.B_NAME}\n"
+                    f"ɴᴀᴍᴇ - {query.from_user.mention} (<code>{query.from_user.id}</code>)\n"
+                    f"Rᴇǫᴜᴇsᴛ - <code>{movie}</code>"
+                )
             except Exception as e:
                 logger.error(f"failed to send request to REQ_CHANNEL: {e}")
 
