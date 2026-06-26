@@ -2473,21 +2473,42 @@ async def advantage_spell_chok(client, message):
     chat_id = message.chat.id
     user = message.from_user.id
     settings = await get_settings(chat_id)
+
+    # ✅ TMDB AI Spell Fix
+    fixed_search = ai_fix_query(search)
+    if fixed_search:
+        search = fixed_search
+
     find = search.split(" ")
     query = ""
-    removes = ["in","upload", "series", "full", "horror", "thriller", "mystery", "print", "file", "send", "chahiye", "chiye", "movi", "movie", "bhejo", "dijiye", "jaldi", "hd", "bollywood", "hollywood", "south", "karo"]
+    removes = [
+        "in", "upload", "series", "full", "horror", "thriller",
+        "mystery", "print", "file", "send", "chahiye", "chiye",
+        "movi", "movie", "bhejo", "dijiye", "jaldi", "hd",
+        "bollywood", "hollywood", "south", "karo"
+    ]
+
     for x in find:
-        if x in removes:
-            continue
-        else:
-            query = query + x + " "
+        if x.lower() not in removes:
+            query += x + " "
+
     query = re.sub(
         r"\b(pl(i|e)*?(s|z+|ease|se|ese|(e+)s(e)?)|((send|snd|giv(e)?|gib)(\sme)?)|movie(s)?|new|latest|br((o|u)h?)*|^h(e|a)?(l)*(o)*|mal(ayalam)?|t(h)?amil|file|that|find|und(o)*|kit(t(i|y)?)?o(w)?|thar(u)?(o)*w?|kittum(o)*|aya(k)*(um(o)*)?|full\smovie|any(one)|with\ssubtitle(s)?)",
-        "", message.text, flags=re.IGNORECASE)
+        "",
+        search,
+        flags=re.IGNORECASE
+    )
+
     query = query.strip() + " movie"
+
     try:
         movies = await get_poster(search, bulk=True)
-    except:
+
+        # Agar AI fixed query se kuch nahi mila to original query try karo
+        if not movies and fixed_search != message.text:
+            movies = await get_poster(message.text, bulk=True)
+
+    except Exception:
         k = await message.reply(script.I_CUDNT.format(search))
         await asyncio.sleep(60)
         await k.delete()
@@ -2496,31 +2517,71 @@ async def advantage_spell_chok(client, message):
         except:
             pass
         return
+
     if not movies:
-        google = search.replace(" ", "+")
+        google = message.text.replace(" ", "+")
+
         button = [[
-            InlineKeyboardButton("🔍 ᴄʜᴇᴄᴋ sᴘᴇʟʟɪɴɢ ᴏɴ ɢᴏᴏɢʟᴇ 🔍", url=f"https://www.google.com/search?q={google}")
+            InlineKeyboardButton(
+                "🔍 ᴄʜᴇᴄᴋ sᴘᴇʟʟɪɴɢ ᴏɴ ɢᴏᴏɢʟᴇ 🔍",
+                url=f"https://www.google.com/search?q={google}"
+            )
         ]]
-        k = await message.reply_text(text=script.I_CUDNT.format(search), reply_markup=InlineKeyboardMarkup(button))
+
+        k = await message.reply_text(
+            text=script.I_CUDNT.format(message.text),
+            reply_markup=InlineKeyboardMarkup(button)
+        )
+
         await asyncio.sleep(120)
         await k.delete()
+
         try:
             await message.delete()
         except:
             pass
         return
+
     user = message.from_user.id if message.from_user else 0
-    buttons = [[
-        InlineKeyboardButton(text=movie.get('title'), callback_data=f"spol#{movie.movieID}#{user}")
-    ]
-        for movie in movies
-    ]
-    buttons.append(
-        [InlineKeyboardButton(text="🚫 ᴄʟᴏsᴇ 🚫", callback_data='close_data')]
+
+    buttons = []
+    seen = set()
+
+    for movie in movies:
+        title = movie.get("title")
+
+        if not title or title.lower() in seen:
+            continue
+
+        seen.add(title.lower())
+
+        buttons.append([
+            InlineKeyboardButton(
+                text=title,
+                callback_data=f"spol#{movie.movieID}#{user}"
+            )
+        ])
+
+    buttons.append([
+        InlineKeyboardButton(
+            text="🚫 ᴄʟᴏsᴇ 🚫",
+            callback_data="close_data"
+        )
+    ])
+
+    d = await message.reply_text(
+        text=script.CUDNT_FND.format(search),
+        reply_markup=InlineKeyboardMarkup(buttons),
+        reply_to_message_id=message.id
     )
-    d = await message.reply_text(text=script.CUDNT_FND.format(search), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
+
     await asyncio.sleep(120)
-    await d.delete()
+
+    try:
+        await d.delete()
+    except:
+        pass
+
     try:
         await message.delete()
     except:
