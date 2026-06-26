@@ -2516,7 +2516,13 @@ async def auto_filter(client, msg, spoll=False):
         return
 
 async def advantage_spell_chok(message, search):
-    # Enforce AI Spell Check before searching on TMDB
+    # Safe check: agar search ek Message object hai, toh uska text nikal lo
+    if hasattr(search, 'text'):
+        search = search.text
+    elif not isinstance(search, str):
+        search = str(search)
+
+    # Ab safe tareeqe se AI Spell Check enforce karein
     search = ai_fix_query(search)
     
     movies = await get_poster(search, bulk=True)
@@ -2554,7 +2560,7 @@ async def advantage_spell_chok(message, search):
         if not title or title.lower() in seen:
             continue
 
-        seen.add(title.lower())\
+        seen.add(title.lower())
 
         buttons.append([
             InlineKeyboardButton(
