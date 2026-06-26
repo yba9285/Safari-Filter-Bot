@@ -288,10 +288,14 @@ async def get_poster(query, bulk=False, id=False, file=None):
                     year = m[0]
 
             # ----- TMDb search (requests se) -----
+            # Spelling aur popularity correction ke liye pehle AI function use karenge
+            corrected_query = ai_fix_query(title)
+
             params = {
                 "api_key": TMDB_API_KEY,
-                "query": title,
+                "query": corrected_query,  # <-- Yahan corrected query pass hogi
                 "include_adult": False,
+                "region": "IN"  # <-- Indian/Popular movies ko strong priority dene ke liye
             }
             if year:
                 try:
