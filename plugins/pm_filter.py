@@ -2515,8 +2515,16 @@ async def auto_filter(client, msg, spoll=False):
         await message.reply(f"{e}")
         return
 
-async def advantage_spell_chok(message, search):
-    # Safe check: agar search ek Message object hai, toh uska text nikal lo
+async def advantage_spell_chok(*args):
+    # Dynamic parameter handling taaki bot/client aur message sahi se set ho sakein
+    if len(args) == 3:
+        bot, message, search = args
+    elif len(args) == 2:
+        message, search = args
+    else:
+        return
+
+    # Safe check: agar search ek Message ya Client object hai, toh text nikal lo
     if hasattr(search, 'text'):
         search = search.text
     elif not isinstance(search, str):
