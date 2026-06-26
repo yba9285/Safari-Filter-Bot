@@ -2186,17 +2186,17 @@ async def auto_filter(client, msg, spoll=False):
                         fixed,
                         offset=0,
                         filter=True
-                 )
+                )
 
-                 if files:
-                     search = fixed
+                if files:
+                    search = fixed
 
-                 # ===== Step 3 : Regex Search =====
-                 if not files:
-                     words = [
-                     x for x in re.split(r"[\s\-\._:]+", search)
-                  if len(x) > 2
-                  ]
+                # ===== Step 3 : Regex Search =====
+                if not files:
+                    words = [
+                    x for x in re.split(r"[\s\-\._:]+", search)
+                if len(x) > 2
+                    ]
 
                 if words:
                      regex = ".*".join(words)
