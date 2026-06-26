@@ -62,22 +62,32 @@ class temp(object):
 
 def ai_fix_query(query: str) -> str:
     """
-    TMDb ki help se galat spelling ko sahi movie title me convert karta hai.
-    Agar kuch na mile ya error aaye to original query hi return karega.
+    TMDB AI Spell Fix
+    - Wrong spelling fix
+    - Part 1 / Part 2 detect
+    - Year support
+    - Original query return if nothing found
     """
     try:
         if not TMDB_API_KEY:
             return query
 
         query = (query or "").strip()
-        if len(query) < 3:
+
+        if len(query) < 2:
             return query
 
-        # Year alag nikaal lo (jaise "avatr 2009")
+        # normalize
+        query = query.replace(".", " ")
+        query = re.sub(r"[_\-]+", " ", query)
+        query = re.sub(r"\s+", " ", query).strip()
+
+        # year detect
         year = None
-        m = re.findall(r"[1-2]\d{3}$", query)
+        m = re.search(r"(19|20)\d{2}$", query)
+
         if m:
-            year = m[0]
+            year = m.group()
             title = query.replace(year, "").strip()
         else:
             title = query
@@ -86,30 +96,45 @@ def ai_fix_query(query: str) -> str:
             "api_key": TMDB_API_KEY,
             "query": title,
             "include_adult": False,
+            "language": "en-US"
         }
+
         if year:
             params["year"] = int(year)
 
-        r = requests.get(f"{TMDB_API_BASE}/search/movie", params=params, timeout=10)
+        r = requests.get(
+            f"{TMDB_API_BASE}/search/movie",
+            params=params,
+            timeout=10
+        )
+
         if r.status_code != 200:
             return query
 
-        data = r.json()
-        results = data.get("results") or []
+        results = r.json().get("results", [])
+
         if not results:
             return query
 
         best = results[0]
-        fixed_title = best.get("title") or best.get("name")
-        release_date = (best.get("release_date") or "")[:4]
+
+        fixed_title = best.get("title") or best.get("original_title")
 
         if not fixed_title:
             return query
 
-        if release_date:
-            return f"{fixed_title} {release_date}"
+        release_year = ""
+
+        if best.get("release_date"):
+            release_year = best["release_date"][:4]
+
+        if release_year:
+            return f"{fixed_title} {release_year}"
+
         return fixed_title
-    except Exception:
+
+    except Exception as e:
+        logger.error(f"AI Fix Error: {e}")
         return query
 
 async def check_reset_time():
