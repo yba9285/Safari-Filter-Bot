@@ -2177,19 +2177,24 @@ async def auto_filter(client, msg, spoll=False):
                 settings["imdb"] = True
 
                 # ===== Step 2 : TMDB AI Spell Fix =====
+                fixed = None
+
                 if not files:
                     fixed = ai_fix_query(search)
 
-                if fixed and fixed.lower() != search.lower():
-                    files, offset, total_results = await get_search_results(
-                        message.chat.id,
-                        fixed,
-                        offset=0,
-                        filter=True
-                )
+                    if fixed:
+                        fixed = fixed.strip()
 
-                if files:
-                    search = fixed
+                    if fixed and fixed.lower() != search.lower():
+                        files, offset, total_results = await get_search_results(
+                            message.chat.id,
+                            fixed,
+                            offset=0,
+                            filter=True
+                        )
+
+                    if files:
+                        search = fixed
 
                 # ===== Step 3 : Regex Search =====
                 if not files:
