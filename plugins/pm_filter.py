@@ -2165,21 +2165,57 @@ async def auto_filter(client, msg, spoll=False):
                 search = search.replace("-", " ")
                 search = search.replace(":", "")
 
-                # 1st normal DB search
+                # ===== Step 1 : Exact Mongo Search =====
                 files, offset, total_results = await get_search_results(
-                    message.chat.id, search, offset=0, filter=True
+                    message.chat.id,
+                    search,
+                    offset=0,
+                    filter=True
                 )
+
                 settings = await get_settings(message.chat.id)
                 settings["imdb"] = True
 
-                # 🧠 IMDb based AI spelling correction
+                # ===== Step 2 : TMDB AI Spell Fix =====
                 if not files:
                     fixed = ai_fix_query(search)
-                    if fixed and fixed.lower() != search.lower():
+
+                if fixed and fixed.lower() != search.lower():
+                    files, offset, total_results = await get_search_results(
+                        message.chat.id,
+                        fixed,
+                        offset=0,
+                        filter=True
+                 )
+
+                 if files:
+                     search = fixed
+
+                 # ===== Step 3 : Regex Search =====
+                 if not files:
+                     words = [
+                     x for x in re.split(r"[\s\-\._:]+", search)
+                  if len(x) > 2
+                  ]
+
+                if words:
+                     regex = ".*".join(words)
+
+                    try:
                         files, offset, total_results = await get_search_results(
-                            message.chat.id, fixed, offset=0, filter=True
+                            message.chat.id,
+                            regex,
+                            offset=0,
+                            filter=True,
+                            max_results=300
                         )
-                        search = fixed  # ab aage sab isi se chalega
+                except TypeError:
+                        files, offset, total_results = await get_search_results(
+                            message.chat.id,
+                            regex,
+                            offset=0,
+                            filter=True
+                )
 
                 # Agar ab bhi files nahi mile → purana AI spell system
                 if not files:
