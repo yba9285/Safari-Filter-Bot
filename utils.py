@@ -63,12 +63,7 @@ class temp(object):
 
 def ai_fix_query(query: str) -> str:
     """
-    TMDB AI Spell Fix
-    - Wrong spelling fix
-    - Top 10 TMDB results compare
-    - Best similarity match
-    - Year support
-    - Original query return if no good match
+    TMDB AI Spell Fix (Upgraded with Popularity & Smart Matching)
     """
     try:
         if not TMDB_API_KEY:
@@ -81,8 +76,8 @@ def ai_fix_query(query: str) -> str:
 
         # Normalize
         query = query.replace(".", " ")
-        query = re.sub(r"[_\-]+", " ", query)
-        query = re.sub(r"\s+", " ", query).strip()
+        re_sub = re.sub(r"[_\-]+", " ", query)
+        query = re.sub(r"\s+", " ", re_sub).strip()
 
         # Detect year
         year = None
@@ -98,7 +93,8 @@ def ai_fix_query(query: str) -> str:
             "api_key": TMDB_API_KEY,
             "query": title,
             "include_adult": False,
-            "language": "en-US"
+            "language": "en-US",
+            "region": "IN"  # <-- Indian movies ko priority
         }
 
         if year:
@@ -119,10 +115,9 @@ def ai_fix_query(query: str) -> str:
             return query
 
         best = None
-        best_score = 0
+        best_final_score = 0
 
         for movie in results[:10]:
-
             movie_title = (
                 movie.get("title")
                 or movie.get("original_title")
@@ -132,41 +127,34 @@ def ai_fix_query(query: str) -> str:
             if not movie_title:
                 continue
 
-            score = max(
-                fuzz.ratio(title.lower(), movie_title.lower()),
-                fuzz.partial_ratio(title.lower(), movie_title.lower()),
-                fuzz.token_sort_ratio(title.lower(), movie_title.lower())
-            )
+            # Calculate Text Similarity
+            ratio = fuzz.ratio(title.lower(), movie_title.lower())
+            token_score = fuzz.token_sort_ratio(title.lower(), movie_title.lower())
+            partial = fuzz.partial_ratio(title.lower(), movie_title.lower())
+            
+            # Partial ratio ka weight kam kiya taaki lambe names galat trigger na hon ka
+            text_score = max(ratio, token_score, (partial * 0.80))
 
-            if score > best_score:
-                best_score = score
+            # Popularity Bonus (Max 25 points)
+            popularity = movie.get("popularity", 0)
+            pop_bonus = min(25, popularity / 5) 
+
+            final_score = text_score + pop_bonus
+
+            if final_score > best_final_score:
+                best_final_score = final_score
                 best = movie
 
-        # Weak match
-        if not best or best_score < 70:
+        if not best or (best_final_score < 65):
             return query
 
-        fixed_title = (
-            best.get("title")
-            or best.get("original_title")
-        )
-
-        if not fixed_title:
-            return query
-
-        release_year = ""
-
-        if best.get("release_date"):
-            release_year = best["release_date"][:4]
-
-        if release_year:
-            return f"{fixed_title} {release_year}"
-
+        fixed_title = (best.get("title") or best.get("original_title"))
         return fixed_title
 
     except Exception as e:
         logger.error(f"AI Fix Error: {e}")
         return query
+        
 
 async def check_reset_time():
     tz = pytz.timezone('Asia/Kolkata')
