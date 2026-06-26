@@ -28,6 +28,7 @@ from bs4 import BeautifulSoup
 import aiohttp
 from types import SimpleNamespace
 from shortzy import Shortzy
+from fuzzywuzzy import fuzz
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
