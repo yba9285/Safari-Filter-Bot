@@ -1206,7 +1206,14 @@ async def pm_spoll_choker(bot, query):
     if int(user) != 0 and query.from_user.id != int(user):
         return await query.answer(script.ALRT_TXT.format(query.from_user.first_name), show_alert=True)
     movie = await get_poster(id, id=True)
-    search = movie.get('title')
+
+    if not movie:
+        return await query.answer(
+            "❌ Movie details not found.",
+            show_alert=True
+    )
+
+    search = ai_fix_query(movie.get("title"))
     await query.answer('ᴄʜᴇᴄᴋɪɴɢ ɪɴ ᴍʏ ᴅᴀᴛᴀʙᴀꜱᴇ 🌚')
     files, offset, total_results = await get_search_results(query.message.chat.id, search)
     if files:
