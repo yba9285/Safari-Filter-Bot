@@ -2204,7 +2204,7 @@ async def auto_filter(client, msg, spoll=False):
                     ]
 
                     if words:
-                        regex = ".*".join(words)
+                        regex = ".*".join(re.escape(x) for x in words)
 
                         try:
                             files, offset, total_results = await get_search_results(
