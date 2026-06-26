@@ -62,95 +62,50 @@ class temp(object):
     
 
 def ai_fix_query(query: str) -> str:
-    """
-    TMDB AI Spell Fix (Upgraded with Popularity & Smart Matching)
-    """
     try:
         if not TMDB_API_KEY:
             return query
-
         query = (query or "").strip()
-
         if len(query) < 2:
             return query
-
-        # Normalize
         query = query.replace(".", " ")
-        re_sub = re.sub(r"[_\-]+", " ", query)
-        query = re.sub(r"\s+", " ", re_sub).strip()
-
-        # Detect year
+        query = re.sub(r"[_\-]+", " ", query)
+        query = re.sub(r"\s+", " ", query).strip()
         year = None
         m = re.search(r"(19|20)\d{2}$", query)
-
         if m:
             year = m.group()
             title = query.replace(year, "").strip()
         else:
             title = query
-
-        params = {
-            "api_key": TMDB_API_KEY,
-            "query": title,
-            "include_adult": False,
-            "language": "en-US",
-            "region": "IN"  # <-- Indian movies ko priority
-        }
-
+        params = {"api_key": TMDB_API_KEY, "query": title, "include_adult": False, "language": "en-US", "region": "IN"}
         if year:
             params["year"] = int(year)
-
-        r = requests.get(
-            f"{TMDB_API_BASE}/search/movie",
-            params=params,
-            timeout=10
-        )
-
+        r = requests.get(f"{TMDB_API_BASE}/search/movie", params=params, timeout=10)
         if r.status_code != 200:
             return query
-
         results = r.json().get("results", [])
-
         if not results:
             return query
-
         best = None
         best_final_score = 0
-
         for movie in results[:10]:
-            movie_title = (
-                movie.get("title")
-                or movie.get("original_title")
-                or ""
-            ).strip()
-
+            movie_title = (movie.get("title") or movie.get("original_title") or "").strip()
             if not movie_title:
                 continue
-
-            # Calculate Text Similarity
             ratio = fuzz.ratio(title.lower(), movie_title.lower())
             token_score = fuzz.token_sort_ratio(title.lower(), movie_title.lower())
             partial = fuzz.partial_ratio(title.lower(), movie_title.lower())
-            
-            # Partial ratio ka weight kam kiya taaki lambe names galat trigger na hon ka
-            text_score = max(ratio, token_score, (partial * 0.80))
-
-            # Popularity Bonus (Max 25 points)
+            text_score = max(ratio, token_score, (partial * 0.75))
             popularity = movie.get("popularity", 0)
-            pop_bonus = min(25, popularity / 5) 
-
+            pop_bonus = min(35, popularity / 4) 
             final_score = text_score + pop_bonus
-
             if final_score > best_final_score:
                 best_final_score = final_score
                 best = movie
-
-        if not best or (best_final_score < 65):
+        if not best or best_final_score < 60:
             return query
-
-        fixed_title = (best.get("title") or best.get("original_title"))
-        return fixed_title
-
+        return best.get("title") or best.get("original_title") or query
     except Exception as e:
         logger.error(f"AI Fix Error: {e}")
         return query
@@ -571,6 +526,7 @@ async def get_users():
 
 async def get_text(settings, remaining_seconds, files, query, total_results, search):
     try:
+        search = ai_fix_query(search)  # <-- Yeh line jodna hai
         if settings["imdb"]:
             IMDB_CAP = temp.IMDB_CAP.get(query.from_user.id)
             CAPTION = f"☠️ ᴛɪᴛʟᴇ : <code>{search}</code>\n📂 ᴛᴏᴛᴀʟ ꜰɪʟᴇꜱ : <code>{total_results}</code>\n📝 ʀᴇǫᴜᴇsᴛᴇᴅ ʙʏ : {query.from_user.first_name}\n⏰ ʀᴇsᴜʟᴛ ɪɴ : <code>{remaining_seconds} Sᴇᴄᴏɴᴅs</code>\n\n</b>"
