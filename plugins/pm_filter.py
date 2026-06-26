@@ -2200,27 +2200,27 @@ async def auto_filter(client, msg, spoll=False):
                 if not files:
                     words = [
                         x for x in re.split(r"[\s\-\._:]+", search)
-                if len(x) > 2
+                        if len(x) > 2
                     ]
 
-                if words:
-                   regex = ".*".join(words)
+                    if words:
+                        regex = ".*".join(words)
 
-                   try:
-                       files, offset, total_results = await get_search_results(
-                           message.chat.id,
-                           regex,
-                           offset=0,
-                           filter=True,
-                           max_results=300
-                      )
-                   except TypeError:
-                       files, offset, total_results = await get_search_results(
-                           message.chat.id,
-                           regex,
-                           offset=0,
-                           filter=True
-                       )
+                        try:
+                            files, offset, total_results = await get_search_results(
+                                message.chat.id,
+                                regex,
+                                offset=0,
+                                filter=True,
+                                max_results=300
+                            )
+                        except TypeError:
+                            files, offset, total_results = await get_search_results(
+                                message.chat.id,
+                                regex,
+                                offset=0,
+                                filter=True
+                            )
 
                 # Agar ab bhi files nahi mile → purana AI spell system
                 if not files:
