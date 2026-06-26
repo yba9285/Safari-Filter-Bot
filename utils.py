@@ -64,9 +64,10 @@ def ai_fix_query(query: str) -> str:
     """
     TMDB AI Spell Fix
     - Wrong spelling fix
-    - Part 1 / Part 2 detect
+    - Top 10 TMDB results compare
+    - Best similarity match
     - Year support
-    - Original query return if nothing found
+    - Original query return if no good match
     """
     try:
         if not TMDB_API_KEY:
@@ -77,12 +78,12 @@ def ai_fix_query(query: str) -> str:
         if len(query) < 2:
             return query
 
-        # normalize
+        # Normalize
         query = query.replace(".", " ")
         query = re.sub(r"[_\-]+", " ", query)
         query = re.sub(r"\s+", " ", query).strip()
 
-        # year detect
+        # Detect year
         year = None
         m = re.search(r"(19|20)\d{2}$", query)
 
@@ -116,9 +117,38 @@ def ai_fix_query(query: str) -> str:
         if not results:
             return query
 
-        best = results[0]
+        best = None
+        best_score = 0
 
-        fixed_title = best.get("title") or best.get("original_title")
+        for movie in results[:10]:
+
+            movie_title = (
+                movie.get("title")
+                or movie.get("original_title")
+                or ""
+            ).strip()
+
+            if not movie_title:
+                continue
+
+            score = max(
+                fuzz.ratio(title.lower(), movie_title.lower()),
+                fuzz.partial_ratio(title.lower(), movie_title.lower()),
+                fuzz.token_sort_ratio(title.lower(), movie_title.lower())
+            )
+
+            if score > best_score:
+                best_score = score
+                best = movie
+
+        # Weak match
+        if not best or best_score < 70:
+            return query
+
+        fixed_title = (
+            best.get("title")
+            or best.get("original_title")
+        )
 
         if not fixed_title:
             return query
