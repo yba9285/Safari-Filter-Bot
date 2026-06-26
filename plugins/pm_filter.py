@@ -2515,60 +2515,13 @@ async def auto_filter(client, msg, spoll=False):
         await message.reply(f"{e}")
         return
 
-async def advantage_spell_chok(client, message):
-    mv_id = message.id
-    search = message.text
-    chat_id = message.chat.id
-    user = message.from_user.id
-    settings = await get_settings(chat_id)
-
-    # ✅ TMDB AI Spell Fix
-    fixed_search = ai_fix_query(search)
-    if fixed_search:
-        search = fixed_search
-
-    find = search.split(" ")
-    query = ""
-    removes = [
-        "in", "upload", "series", "full", "horror", "thriller",
-        "mystery", "print", "file", "send", "chahiye", "chiye",
-        "movi", "movie", "bhejo", "dijiye", "jaldi", "hd",
-        "bollywood", "hollywood", "south", "karo"
-    ]
-
-    for x in find:
-        if x.lower() not in removes:
-            query += x + " "
-
-    query = re.sub(
-        r"\b(pl(i|e)*?(s|z+|ease|se|ese|(e+)s(e)?)|((send|snd|giv(e)?|gib)(\sme)?)|movie(s)?|new|latest|br((o|u)h?)*|^h(e|a)?(l)*(o)*|mal(ayalam)?|t(h)?amil|file|that|find|und(o)*|kit(t(i|y)?)?o(w)?|thar(u)?(o)*w?|kittum(o)*|aya(k)*(um(o)*)?|full\smovie|any(one)|with\ssubtitle(s)?)",
-        "",
-        search,
-        flags=re.IGNORECASE
-    )
-
-    query = query.strip() + " movie"
-
-    try:
-        movies = await get_poster(search, bulk=True)
-
-        # Agar AI fixed query se kuch nahi mila to original query try karo
-        if not movies and fixed_search != message.text:
-            movies = await get_poster(message.text, bulk=True)
-
-    except Exception:
-        k = await message.reply(script.I_CUDNT.format(search))
-        await asyncio.sleep(60)
-        await k.delete()
-        try:
-            await message.delete()
-        except:
-            pass
-        return
-
+async def advantage_spell_chok(message, search):
+    # Enforce AI Spell Check before searching on TMDB
+    search = ai_fix_query(search)
+    
+    movies = await get_poster(search, bulk=True)
     if not movies:
-        google = message.text.replace(" ", "+")
-
+        google = search.replace(" ", "+")
         button = [[
             InlineKeyboardButton(
                 "🔍 ᴄʜᴇᴄᴋ sᴘᴇʟʟɪɴɢ ᴏɴ ɢᴏᴏɢʟᴇ 🔍",
@@ -2601,7 +2554,7 @@ async def advantage_spell_chok(client, message):
         if not title or title.lower() in seen:
             continue
 
-        seen.add(title.lower())
+        seen.add(title.lower())\
 
         buttons.append([
             InlineKeyboardButton(
@@ -2629,11 +2582,7 @@ async def advantage_spell_chok(client, message):
         await d.delete()
     except:
         pass
-
-    try:
-        await message.delete()
-    except:
-        pass
+        
                                      
 # This code has been modified by Safaridev
 # Please do not remove this credit
