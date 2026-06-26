@@ -13,6 +13,7 @@ from info import DATABASE_URI, DATABASE_NAME, COLLECTION_NAME, USE_CAPTION_FILTE
 from utils import get_settings, save_group_settings
 from fuzzywuzzy import process, fuzz
 from Script import script
+from utils import ai_fix_query
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
