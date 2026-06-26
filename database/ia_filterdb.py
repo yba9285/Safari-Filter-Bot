@@ -150,51 +150,114 @@ async def get_all_files():
 
 async def get_similar_movies(query, limit=10):
     try:
-        words = query.split()
+        query = query.strip()
 
-        regex_filter = {
-            "$or": [
-                {"file_name": {"$regex": word, "$options": "i"}}
-                for word in words
-            ]
+        # ---------- STEP 1 : AI SPELL FIX ----------
+        fixed = ai_fix_query(query)
+
+        if fixed:
+            query = fixed
+
+        # ---------- STEP 2 : EXACT SEARCH ----------
+        files, _, total = await get_search_results(
+            chat_id=None,
+            query=query,
+            max_results=1
+        )
+
+        if total:
+            return [query]
+
+        # ---------- STEP 3 : REGEX SEARCH ----------
+        stop_words = {
+            "the", "a", "an", "movie", "film",
+            "part", "vol", "volume", "and",
+            "of", "in"
         }
 
-        cursor = Media.find(regex_filter)
-        candidates = await cursor.to_list(length=500)
+        words = [
+            w.lower()
+            for w in re.findall(r"[a-zA-Z0-9]+", query)
+            if len(w) > 2 and w.lower() not in stop_words
+        ]
+
+        if not words:
+            return []
+
+        regex = ".*".join(map(re.escape, words))
+
+        cursor = Media.find({
+            "file_name": {
+                "$regex": regex,
+                "$options": "i"
+            }
+        })
+
+        candidates = await cursor.to_list(length=300)
+
+        if not candidates:
+
+            regex_filter = {
+                "$or": [
+                    {
+                        "file_name": {
+                            "$regex": re.escape(word),
+                            "$options": "i"
+                        }
+                    }
+                    for word in words
+                ]
+            }
+
+            cursor = Media.find(regex_filter)
+            candidates = await cursor.to_list(length=300)
 
         if not candidates:
             return []
 
+        # ---------- STEP 4 : CLEAN TITLES ----------
         titles = []
         seen = set()
 
         for movie in candidates:
+
             title = movie.get("file_name", "")
 
             title = re.sub(
-                r'(?i)(480p|720p|1080p|2160p|4k|hdrip|webrip|web-dl|bluray|x264|x265|hevc|hq)',
+                r'(?i)(480p|720p|1080p|2160p|4k|hdrip|webrip|web-dl|bluray|brrip|dvdrip|x264|x265|hevc|aac|esub|hq)',
                 '',
                 title
             )
 
             title = re.sub(r'[\[\]\(\)_\-\.\|]', ' ', title)
+
             title = " ".join(title.split())
 
-            if title.lower() not in seen:
-                seen.add(title.lower())
+            key = title.lower()
+
+            if key not in seen:
+                seen.add(key)
                 titles.append(title)
 
+        # ---------- STEP 5 : FUZZY ----------
         matches = process.extract(
             query,
             titles,
-            scorer=fuzz.token_sort_ratio,
+            scorer=fuzz.token_set_ratio,
             limit=limit
         )
 
-        return [title for title, score in matches if score >= 40]
+        suggestions = []
+
+        for title, score in matches:
+
+            if score >= 60:
+                suggestions.append(title)
+
+        return suggestions
 
     except Exception as e:
-        logger.error(f"Suggestion error: {e}")
+        logger.exception(e)
         return []
 
 async def get_bad_files(query, file_type=None, filter=False):
